@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">My Lifestyle 9000</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="submit">Submit</string>
+    <string name="hello_new_user">Hello New User!\nPlease Enter Your Full Name</string>
+    <string name="middle_name">Middle Name</string>
+    <string name="take_picture">Take A New Profile Picture</string>
+    <string name="toast_name">Enter a First, Middle and Last Name</string>
+    <string name="is_logged_in">is logged in!</string>
+    <string name="back">Back</string>
+    <string name="previous">Previous</string>
+</resources>
