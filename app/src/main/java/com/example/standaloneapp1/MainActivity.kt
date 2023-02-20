@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.PersistableBundle
 import android.provider.MediaStore
 import android.view.View
 import android.widget.*
@@ -22,39 +23,58 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     private var editTextMiddleName: EditText? = null
     private var editTextLastName: EditText? = null
     private var imageViewPicture: ImageView? = null
+    private var messageIntent: Intent? = null
+    private var profileImage: Bitmap? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        editTextFirstName = findViewById(R.id.editTextTextPersonFirstName)
+        editTextMiddleName = findViewById(R.id.editTextTextPersonMiddleName)
+        editTextLastName = findViewById(R.id.editTextTextPersonLastName)
+        imageViewPicture = findViewById<View>(R.id.imageView) as ImageView
+
+
         buttonCamera = findViewById(R.id.button_takePicture)
         buttonCamera!!.setOnClickListener(this)
         buttonSubmit = findViewById(R.id.button_submit)
         buttonSubmit!!.setOnClickListener(this)
+        messageIntent = Intent(this, DashboardActivity::class.java)
+
+        var receivedIntent = intent
+        if (receivedIntent != null) {
+            editTextFirstName!!.setText(receivedIntent!!.getStringExtra("EditText_FirstName"))
+            editTextMiddleName!!.setText(receivedIntent!!.getStringExtra("EditText_MiddleName"))
+            editTextLastName!!.setText(receivedIntent!!.getStringExtra("EditText_LastName"))
+            if (Build.VERSION.SDK_INT >= 33) {
+                profileImage = receivedIntent!!.getParcelableExtra("Bitmap_ProfileImage", Bitmap::class.java)
+            } else {
+                val thumbnailImage = receivedIntent!!.getParcelableExtra<Bitmap>("data")
+            }
+            imageViewPicture!!.setImageBitmap(profileImage)
+        }
     }
     override fun onClick(view: View) {
         when (view.id) {
             R.id.button_submit -> {
                 // Get data from Edit Texts
-                editTextFirstName = findViewById<EditText>(R.id.editTextTextPersonFirstName)
                 firstName = editTextFirstName!!.text.toString()
-                editTextMiddleName = findViewById<EditText>(R.id.editTextTextPersonMiddleName)
                 middleName = editTextMiddleName!!.text.toString()
-                editTextLastName = findViewById<EditText>(R.id.editTextTextPersonLastName)
                 lastName = editTextLastName!!.text.toString()
-                if (firstName.isNullOrBlank() || middleName.isNullOrBlank() || lastName.isNullOrBlank()) {
+                if (firstName.isNullOrBlank() || middleName.isNullOrBlank() || lastName.isNullOrBlank() || profileImage == null) {
                     Toast.makeText(
                         this@MainActivity,
-                        getString(R.string.toast_name),
+                        getString(R.string.toast_submit),
                         Toast.LENGTH_SHORT
                     )
                         .show()
                 } else {
                     // Start an activity
-                    val messageIntent = Intent(this, DashboardActivity::class.java)
-                    messageIntent.putExtra("EditText_FirstName", firstName)
-                    messageIntent.putExtra("EditText_MiddleName", middleName)
-                    messageIntent.putExtra("EditText_LastName", lastName)
+                    messageIntent!!.putExtra("Bitmap_ProfileImage", profileImage)
+                    messageIntent!!.putExtra("EditText_FirstName", firstName)
+                    messageIntent!!.putExtra("EditText_MiddleName", middleName)
+                    messageIntent!!.putExtra("EditText_LastName", lastName)
                     startActivity(messageIntent)
                 }
             }
@@ -71,17 +91,40 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private val cameraActivity = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
-            imageViewPicture = findViewById<View>(R.id.imageView) as ImageView
-            //val extras = result.data!!.extras
-            //val thumbnailImage = extras!!["data"] as Bitmap?
-
             if (Build.VERSION.SDK_INT >= 33) {
-                val thumbnailImage = result.data!!.getParcelableExtra("data", Bitmap::class.java)
-                imageViewPicture!!.setImageBitmap(thumbnailImage)
+                profileImage = result.data!!.getParcelableExtra("data", Bitmap::class.java)
+                imageViewPicture!!.setImageBitmap(profileImage)
             } else {
                 val thumbnailImage = result.data!!.getParcelableExtra<Bitmap>("data")
                 imageViewPicture!!.setImageBitmap(thumbnailImage)
             }
         }
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle?, persistentState: PersistableBundle?) {
+        super.onRestoreInstanceState(savedInstanceState, persistentState)
+        if (savedInstanceState != null) {
+            editTextFirstName!!.setText(savedInstanceState.getString("FirstName_TEXT"))
+            editTextMiddleName!!.setText(savedInstanceState.getString("MiddleName_TEXT"))
+            editTextLastName!!.setText(savedInstanceState.getString("LastName_TEXT"))
+            if (Build.VERSION.SDK_INT >= 33) {
+            imageViewPicture!!.setImageBitmap(savedInstanceState.getParcelable("Bitmap_Image", Bitmap::class.java))
+                } else{
+                imageViewPicture!!.setImageBitmap(savedInstanceState.getParcelable("Bitmap_Image"))
+            }
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle, outPersistentState: PersistableBundle) {
+        super.onSaveInstanceState(outState, outPersistentState)
+        firstName = editTextFirstName!!.text.toString()
+        middleName = editTextMiddleName!!.text.toString()
+        lastName = editTextLastName!!.text.toString()
+
+        //Put them in the outgoing Bundle
+        outState.putParcelable("Bitmap_ProfileImage",profileImage);
+        outState.putString("FirstName_TEXT", firstName)
+        outState.putString("MiddleName_TEXT", middleName)
+        outState.putString("LastName_TEXT", lastName)
     }
 }
